@@ -9,7 +9,6 @@ import { OrbitControls } from './CMapJS/Libs/OrbitsControls.js';
 import { loadCMap2 } from './CMapJS/IO/Surface_Formats/CMap2IO.js';
 import { loadSurfaceView } from './CMapJS/Rendering/displayOnly.js';
 import { controllers, GUI } from './CMapJS/Libs/dat.gui.module.js';
-
 import { TransformControls } from './CMapJS/Libs/TransformControls.js'
 import MeshHandler from './MeshHandler.js';
 import Gizmo from './Gizmo.js';
@@ -78,9 +77,22 @@ const event_handler = new (function(scope, map_handler){
 	orbit_controls.mouseButtons.LEFT = null;
 	orbit_controls.mouseButtons.RIGHT = null;
 	
+	const guiParams = {
+		vertexSize: 0.01,
+		edgeSize: 1,
+		
+		
+	};
+	let edgeResize = function() {
+		map_handler.resizeEdges(guiParams.edgeSize);
+	}
+	let vertexResize = function() {
+		map_handler.resizeVertices(guiParams.vertexSize);
+	}
 	
-	
-
+	const gui = new GUI({autoPlace: true, hideable: false});
+	gui.add(guiParams, "vertexSize", 0.01, 0.1).onChange(vertexResize);
+	gui.add(guiParams, "edgeSize", 1, 10).onChange(edgeResize);
 	const raycaster = new THREE.Raycaster;
 	const mouse = new THREE.Vector2;
 	

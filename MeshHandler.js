@@ -18,6 +18,9 @@ function MeshHandler (mesh, params = {}) {
 	const face_color = params.face_color || new THREE.Color(0x339999);
 	const face_select_color = params.face_select_color || new THREE.Color(0x00FF00);
 
+	let vertexSize = params.vertexSize || 0.01; 
+	let edgeSize = params.edgeSize || 1.5; 
+
 	const selectedVertices = new Set;
 	const selectedEdges = new Set;
 	const selectedFaces = new Set;
@@ -27,11 +30,11 @@ function MeshHandler (mesh, params = {}) {
 	let verticesMesh, edgesMesh, facesMesh;
 	this.initialize = function (params = {}) {
 		if(params.vertices) {
-			renderer.vertices.create({size: 0.0015625 * 6, color: vertex_color}); 
+			renderer.vertices.create({size: vertexSize, color: vertex_color}); 
 			verticesMesh = renderer.vertices.mesh;
 		}
 		if(params.edges) {
-			renderer.edges.create({size: 1.5, color: edge_color}); 
+			renderer.edges.create({size: edgeSize, color: edge_color}); 
 			edgesMesh = renderer.edges.mesh;
 		}
 		if(params.faces) {
@@ -47,6 +50,17 @@ function MeshHandler (mesh, params = {}) {
 		if(facesMesh) renderer.faces.addTo(parent);
 	}
 
+	this.resizeVertices = function(size) {
+		vertexSize = size;
+		renderer.vertices.resize(size);
+		this.updateVertices();
+	}
+
+	this.resizeEdges = function(size) {
+		edgeSize = size;
+		renderer.edges.resize(size);
+		this.updateEdges();
+	}
 
 	this.updateVertices = function() {
 		renderer.vertices.update();
