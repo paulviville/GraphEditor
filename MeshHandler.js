@@ -1,3 +1,4 @@
+import { exportIncidenceGraph } from './CMapJS/IO/IncidenceGraphFormats/IncidenceGraphIO.js';
 import * as THREE from './CMapJS/Libs/three.module.js';
 import Renderer from './CMapJS/Rendering/Renderer.js';
 
@@ -42,6 +43,10 @@ function MeshHandler (mesh, params = {}) {
 			facesMesh = renderer.faces.mesh;
 		}
 	};
+
+	this.exportMesh = function () {
+		console.log(exportIncidenceGraph(mesh, "ig"));
+	}
 
 	this.addMeshesTo = function (parent) {
 		parentObject = parentObject || parent;
@@ -98,7 +103,6 @@ function MeshHandler (mesh, params = {}) {
 		if(verticesMesh) targets.push(verticesMesh);
 		if(edgesMesh) targets.push(edgesMesh);
 		if(facesMesh) targets.push(facesMesh);
-		console.log(facesMesh)
 		const hit = raycaster.intersectObjects(targets);
 		return (hit[0] ? hit[0].point : undefined);
 	};
@@ -276,10 +280,12 @@ function MeshHandler (mesh, params = {}) {
 	};
 
 	this.addVertex = function (pos) {
+
 		let v = mesh.addVertex();
 		position[v] = pos.clone();
 		this.updateVertices();
 		let vid = mesh.getAttribute(vertex, "instanceId")[v];
+
 		return vid;
 	};
 
@@ -302,7 +308,6 @@ function MeshHandler (mesh, params = {}) {
 		this.updateVertices();
 		this.updateEdges();
 		this.updateFaces();
-
 		return mesh.getAttribute(edge, "instanceId")[e1];
 	};
 

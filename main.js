@@ -17,6 +17,20 @@ import Gizmo from './Gizmo.js';
 import {importIncidenceGraph, exportIncidenceGraph} from './CMapJS/IO/IncidenceGraphFormats/IncidenceGraphIO.js';
 import {test0_ig} from './ig_files.js';
 
+console.log(`space: selection mode (shift down for multi seleciton)
+e: extrusion mode, vertex or edge
+l: connect vertices
+f: create face from closed selection
+c: cut edge on click
+x: cut face between 2 selected vertices
+m: move selection
+o: orbit camera
+p: pan camera
+escp: deselect
+del: delete selection
+s: print mesh string
+`)
+
 let ig = importIncidenceGraph("ig", test0_ig);
 
 const scene = new THREE.Scene();
@@ -175,7 +189,6 @@ const event_handler = new (function(scope, map_handler){
 
 		if(keyHeld.Digit3)
 			{
-				console.log(gizmo.constrain.Z);
 				return keyHeld.ShiftLeft ? gizmo.constrain.Z : gizmo.constrain.XY;}
 	}
 
@@ -186,7 +199,6 @@ const event_handler = new (function(scope, map_handler){
 		setMouse(event);
 		raycaster.setFromCamera(mouse, camera);
 		let p = gizmo.positionHit(raycaster, getGizmoConstraint());
-		console.log(delta)
 		delta.subVectors(p, worldPos0);
 		sphere.position.copy(p);
 		map_handler.displaceSelection(delta);
@@ -287,7 +299,6 @@ const event_handler = new (function(scope, map_handler){
 			let vertexHit = map_handler.selectHit(raycaster, {vertices: true});
 			if(vertexHit) {
 				let vid0 = vertexHit.instanceId;
-				console.log(vertexHit)
 				let vid1 = map_handler.addVertex(vertexHit.point);
 				map_handler.selectVertex(vid1);
 				map_handler.addEdgeFromSelection();
@@ -301,10 +312,10 @@ const event_handler = new (function(scope, map_handler){
 				let eid0 = edgeHit.instanceId;
 				let eid1 = map_handler.extrudeEdge(eid0);
 				map_handler.deselectEdge(eid0);
-				map_handler.deselectAll();
+				// map_handler.deselectAll();
 				map_handler.selectEdge(eid1);
 				moveMouseDown(event);
-
+				return;
 			}
 		}
 	}
@@ -418,6 +429,9 @@ const event_handler = new (function(scope, map_handler){
 				break;
 			case "KeyX": // Cut face
 				nextMode = modecutFace;
+				break;
+			case "KeyS": // Print mesh string
+				map_handler.exportMesh();
 				break;
 		};
 
