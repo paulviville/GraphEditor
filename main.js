@@ -31,7 +31,9 @@ del: delete selection
 s: print mesh string
 `)
 
-let ig = importIncidenceGraph("ig", test0_ig);
+let ig = importIncidenceGraph("ig", `IG
+1 0 0
+0 0 0`);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xAAAAAA);
@@ -432,6 +434,9 @@ const event_handler = new (function(scope, map_handler){
 				break;
 			case "KeyS": // Print mesh string
 				map_handler.exportMesh();
+				break;
+			case "ControlLeft":
+				map_handler.debug();
 				break;
 		};
 

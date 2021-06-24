@@ -44,6 +44,14 @@ function MeshHandler (mesh, params = {}) {
 		}
 	};
 
+	this.debug = function() {
+		console.log(verticesMesh);
+		console.log(edgesMesh);
+		console.log(facesMesh);
+		console.log(mesh);
+		console.log(mesh.nbCells(vertex), mesh.nbCells(edge), mesh.nbCells(face))
+	}
+
 	this.exportMesh = function () {
 		console.log(exportIncidenceGraph(mesh, "ig"));
 	}
@@ -78,8 +86,22 @@ function MeshHandler (mesh, params = {}) {
 	};
 
 	this.updateFaces = function() {
-		renderer.faces.update();
-		facesMesh = renderer.faces.mesh;
+		if(facesMesh) {
+			if(mesh.nbCells(face) == 0){
+				renderer.faces.delete();
+				facesMesh = null;
+			}
+			else {
+				renderer.faces.update();
+				facesMesh = renderer.faces.mesh;
+			}
+		} else {
+			if(mesh.nbCells(face) > 0){
+				this.initialize({faces: true});
+				renderer.faces.addTo(parentObject);
+				facesMesh = renderer.faces.mesh;
+			}
+		}
 	}
 
 	this.updateMeshes = function () {
@@ -89,8 +111,18 @@ function MeshHandler (mesh, params = {}) {
 		if(edgesMesh) {
 			this.updateEdges();
 		}
+
 		if(facesMesh) {
-			this.updateFaces();
+			if(mesh.nbCells(face) == 0)
+				renderer.faces.delete();
+			else 
+				this.updateFaces();
+		} else {
+			if(mesh.nbCells(face) > 0){
+				this.initialize({faces: true});
+				facesMesh.addTo(parentObject);
+				console.log("here")
+			}
 		}
 	}
 
