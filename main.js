@@ -535,6 +535,160 @@ window.map_handler = map_handler;
 window.ig = ig;
 
 
+function nbIncidentFaces(ig, e) {
+	let nbIncFaces = 0;
+	ig.foreachIncident(ig.face, ig.edge, e, f => {
+		++nbIncFaces;
+	});
+	return nbIncFaces;
+};
+
+function isolatedEdge(ig, e) {
+	return nbIncidentFaces(ig, e) == 0;
+}
+
+function boundaryEdge(ig, e) {
+	return nbIncidentFaces(ig, e) == 1;
+}
+
+function pseudoDegree(ig, v) {
+	let degree = 0;
+	let data = {
+		degree: 0,
+		isolatedEdges: 0,
+		boundaryEdges: 0,
+		fanEdges: 0
+	}
+
+	ig.foreachIncident(ig.edge, ig.vertex, v, e => {
+		switch(nbIncidentFaces(ig, e)) {
+			case 0: 
+				data.degree += 1;
+				++data.isolatedEdges;
+				break;
+			case 1: 
+				data.degree += 0.5;
+				++data.boundaryEdges;
+				break;
+			case 2:
+				break;
+			default:
+				++data.fanEdges;
+				return -1;
+		}
+	});
+
+	return data;
+}
+
+const branchesDebugData = [];
+
+function findBranchExtremities(ig, vStart, eStart, eMarker) {
+	// const vMarker = ig.newMarker(ig.vertex);
+	const branch = [eStart];
+
+	let eCurrent = eStart;
+
+	// vMarker.mark(vStart);
+	let incidentVertices = ig.incident(ig.vertex, ig.edge, eStart);
+	let incidentEdges;
+	let vNext = vStart;
+
+	let degree;
+	let debugCount = 0;
+	do {
+		eMarker.mark(eCurrent);
+		incidentVertices = ig.incident(ig.vertex, ig.edge, eCurrent);
+		vNext = incidentVertices[0] != vNext ? incidentVertices[0] : incidentVertices[1];
+		degree = ig.degree(ig.vertex, vNext);
+		if(degree == 2) {
+			debugCount++;
+			incidentEdges = ig.incident(ig.edge, ig.vertex, vNext);
+			eCurrent = incidentEdges[0] != eCurrent ? incidentEdges[0] : incidentEdges[1];
+		}
+	} while (degree == 2)
+	branch.push(eCurrent);
+	return branch;
+}
+
+function analyzeSkeleton (ig) {
+	const igData = {
+		intersections : [],
+		ffJunctures : [],
+		efJunctures : [],
+		branches : [],
+		leaflets : []
+	}
+
+	ig.foreach(ig.vertex, v => {
+		let vertexData = pseudoDegree(ig, v);
+		if(vertexData.degree > 2) {
+			igData.intersections.push(v);
+			return;
+		}
+
+		if(vertexData.degree == 2) {
+			if(vertexData.isolatedEdges == 1)
+				igData.efJunctures.push(v);
+			else if(vertexData.isolatedEdges == 0)
+				igData.ffJunctures.push(v);
+		}
+	});
+
+	const faceMarker = ig.newMarker(ig.face);
+	ig.foreach(ig.face, f0 => {
+		if(faceMarker.marked(f0))
+			return;
+
+		igData.leaflets.push(f0);
+		const visit = [f0];		
+		faceMarker.mark(f0);
+		for(let i = 0; i < visit.length; ++i) {
+			ig.foreachAdjacent(ig.face, ig.edge, visit[i], f => {
+				if(!faceMarker.marked(f)) {
+					faceMarker.mark(f);
+					visit.push(f);
+				}
+			});
+		}
+		
+	});
+
+	const eMarker = ig.newMarker(ig.edge);
+
+	igData.efJunctures.forEach(v => {
+		let firstEdge;
+		ig.foreachIncident(ig.edge, ig.vertex, v, e => {
+			if(ig.degree(ig.edge, e) == 0)
+				firstEdge = e;
+		});
+
+		if(!eMarker.marked(firstEdge))
+			igData.branches.push(findBranchExtremities(ig, v, firstEdge ,eMarker));
+	});
+
+	igData.intersections.forEach(v => {
+		ig.foreachIncident(ig.edge, ig.vertex, v, e => {
+			if(ig.degree(ig.edge, e) == 0 && !eMarker.marked(e))
+				igData.branches.push(findBranchExtremities(ig, v, e, eMarker));
+		});
+	});
+
+	console.log(igData.branches);
+	return igData;
+}
+
+window.analyzeSkeleton = analyzeSkeleton;
+
+
+
+
+
+
+
+
+
+
 function update ()
 {
 	gizmo.update(camera);

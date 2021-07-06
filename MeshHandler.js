@@ -2,7 +2,6 @@ import { exportIncidenceGraph } from './CMapJS/IO/IncidenceGraphFormats/Incidenc
 import * as THREE from './CMapJS/Libs/three.module.js';
 import Renderer from './CMapJS/Rendering/Renderer.js';
 
-
 function MeshHandler (mesh, params = {}) {
 	const vertex = mesh.vertex;
 	const edge = mesh.edge;
