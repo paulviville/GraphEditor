@@ -636,6 +636,7 @@ function analyzeSkeleton (ig) {
 	});
 
 	const faceMarker = ig.newMarker(ig.face);
+	console.log(faceMarker);
 	ig.foreach(ig.face, f0 => {
 		if(faceMarker.marked(f0))
 			return;
@@ -644,7 +645,7 @@ function analyzeSkeleton (ig) {
 		const visit = [f0];		
 		faceMarker.mark(f0);
 		for(let i = 0; i < visit.length; ++i) {
-			ig.foreachAdjacent(ig.face, ig.edge, visit[i], f => {
+			ig.foreachAdjacent(ig.edge, ig.face, visit[i], f => {
 				if(!faceMarker.marked(f)) {
 					faceMarker.mark(f);
 					visit.push(f);
