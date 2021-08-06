@@ -679,15 +679,215 @@ function analyzeSkeleton (ig) {
 	return igData;
 }
 
+function analyzeFaceGeometry (ig) {
+	const faceCenters = ig.addAttribute(ig.face, "faceCenters"); //debug
+	const faceNormals = ig.addAttribute(ig.face, "faceNormals");
+	const faceVertexTangents = ig.addAttribute(ig.face, "faceVertexTangents");
+	const position = ig.getAttribute(ig.vertex, "position");
+
+	ig.foreach(ig.face, f => {
+		const center = new THREE.Vector3;
+		const verts = [];
+		ig.foreachIncident(ig.vertex, ig.face, f, v => {{
+			verts.push(position[v]);
+			center.add(position[v]);
+		}});
+		center.divideScalar(verts.length);
+
+		faceCenters[f] = center;
+		faceNormals[f] = new THREE.Vector3;
+		const normal = new THREE.Vector3;
+		const v0 = new THREE.Vector3;
+		const v1 = new THREE.Vector3;
+		for(let i = 0; i < verts.length; ++i) {
+			v0.copy(verts[i]).sub(center);
+			v1.copy(verts[(i+1)%verts.length]).sub(center);
+			normal.crossVectors(v0, v1).normalize();
+			faceNormals[f].add(normal);
+		}
+		faceNormals[f].divideScalar(verts.length);
+		faceVertexTangents[f] = {};
+	});
+
+	const skelData = analyzeSkeleton(ig);
+
+	skelData.efJunctures.forEach(v => {
+		const tangent = new THREE.Vector3;
+		ig.foreachIncident(ig.face, ig.vertex, v, f => {
+			tangent.add(faceCenters[f].clone().sub(position[v]));
+			faceVertexTangents[f][v] = tangent;
+		});
+		tangent.normalize();
+	});
+
+	skelData.ffJunctures.forEach(v0 => {
+		const faceMarker = ig.newMarker(ig.face);
+		const tangents = [];
+		ig.foreachIncident(ig.face, ig.vertex, v0, f0 => {
+			if(faceMarker.marked(f0))
+				return;
+
+			const tangent = new THREE.Vector3;
+
+			const leaflet = incidentLeaflet(ig, v0, f0);
+			leaflet.forEach(f => {
+				faceMarker.mark(f);
+				tangent.add(faceCenters[f].clone().sub(position[v0]));
+				faceVertexTangents[f][v0] = tangent;
+			});
+			tangent.normalize();
+			tangents.push(tangent);
+		});
+	});
+
+	console.log(faceNormals, faceVertexTangents);
+}
+
+function incidentLeaflets(ig, v0) {
+	const leaflets = [];
+	const faceMarker = ig.newMarker(ig.face);
+
+	ig.foreachIncident(ig.face, ig.vertex, v0, f0 => {
+		if(faceMarker.marked(f0))
+			return;
+
+		const leaflet = incidentLeaflet(ig, v0, f0);
+		leaflet.forEach(f => {
+			faceMarker.mark(f);
+		});
+		leaflets.push(leaflet);
+	});
+
+	return leaflets;
+}
+
+function incidentLeaflet(ig, v0, f0) {
+	const leaflet = [f0];
+	const faceMarker = ig.newMarker(ig.face);
+	faceMarker.mark(f0);
+
+	for(let i = 0; i < leaflet.length; ++i){ 
+		ig.foreachAdjacent(ig.edge, ig.face, leaflet[i], f => {
+			if(faceMarker.marked(f))
+				return;
+			faceMarker.mark(f);
+
+			const incidentVertices = {};
+			let sharedVert = false;
+			ig.foreachIncident(ig.vertex, ig.face, f, v => {
+				if(v == v0)
+					sharedVert = true;
+			});
+			if(sharedVert)
+				leaflet.push(f);
+		});
+	}
+	return leaflet;
+}
+
+function buildContactSurfaces(ig, igData) {
+	const surfaces = new CMap2();
+	
+	const pos = ig.getAttribute(ig.vertex, "position");
+	const faceNormals = ig.getAttribute(ig.face, "faceNormals");
+	const faceCenters = ig.getAttribute(ig.face, "faceCenters");
+	const faceVertexTangents = ig.getAttribute(ig.face, "faceVertexTangents");
+
+
+}
+
+function buildcontactsurface2(ig, v, m2){
+	
+}
+
+
+function debugDrawFaceGeometry() {
+	let skelData = analyzeSkeleton(ig);
+	analyzeFaceGeometry(ig);
+
+	const ig2 = new IncidenceGraph;
+	ig2.createEmbedding(ig2.vertex);
+	const pos = ig2.addAttribute(ig2.vertex, "position");
+	const pos0 = ig.getAttribute(ig.vertex, "position");
+
+	const faceNormals = ig.getAttribute(ig.face, "faceNormals");
+	const faceCenters = ig.getAttribute(ig.face, "faceCenters");
+	const faceVertexTangents = ig.getAttribute(ig.face, "faceVertexTangents");
+
+	ig.foreach(ig.face, f => {
+		let v0 = ig2.addVertex();
+		pos[v0] = faceCenters[f].clone();
+		let v1 = ig2.addVertex();
+		pos[v1] = faceNormals[f].clone().divideScalar(2).add(faceCenters[f]);
+		ig2.addEdge(v0, v1);
+	});
+
+	skelData.efJunctures.forEach(v => {
+		let v0 = ig2.addVertex();
+		pos[v0] = pos0[v].clone();
+		let v1 = ig2.addVertex();
+		let f;
+		ig.foreachIncident(ig.face, ig.vertex, v, fi => {f = f ?? fi})
+		pos[v1] = faceVertexTangents[f][v].clone().divideScalar(2).add(pos[v0]);
+		ig2.addEdge(v0, v1);
+	});
+	
+	skelData.ffJunctures.forEach(v => {
+		let v0 = ig2.addVertex();
+		pos[v0] = pos0[v].clone();
+		const leaflets = incidentLeaflets(ig, v);
+		leaflets.forEach(leaflet => {
+			let v1 = ig2.addVertex();
+			let f = leaflet[0];
+			pos[v1] = faceVertexTangents[f][v].clone().divideScalar(2).add(pos[v0]);
+			ig2.addEdge(v0, v1);
+		});
+		
+		
+	});
+	
+
+
+
+	const renderer2 = new Renderer(ig2);
+	renderer2.vertices.create();
+	renderer2.vertices.addTo(scene);
+	renderer2.edges.create();
+	renderer2.edges.addTo(scene);
+}
+
 window.analyzeSkeleton = analyzeSkeleton;
+window.incidentLeaflet = incidentLeaflet;
+window.analyzeFaceGeometry = analyzeFaceGeometry;
+window.debugDrawFaceGeometry = debugDrawFaceGeometry;
+
+function* testGen(){
+	let i = 0;
+	yield ++i;
+	yield ++i;
+	yield ++i;
+	yield ++i;
+	// while(true) {
+
+	// 	yield (i++ % 2);
+
+	// }
+}
+
+window.gen = testGen();
 
 
+const testObj = {
+	array: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+	*[Symbol.iterator]() {
+		for(let i = 0; i < this.array.length; ++i) {
+			yield (this.array[i]);
+		}
+	}
+}
 
 
-
-
-
-
+window.testObj = testObj
 
 
 function update ()
