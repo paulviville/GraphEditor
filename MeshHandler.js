@@ -1,4 +1,5 @@
 import { exportIncidenceGraph } from './CMapJS/IO/IncidenceGraphFormats/IncidenceGraphIO.js';
+import { exportGraph } from './CMapJS/IO/GraphFormats/GraphIO.js';
 import * as THREE from './CMapJS/Libs/three.module.js';
 import Renderer from './CMapJS/Rendering/Renderer.js';
 
@@ -7,12 +8,28 @@ function MeshHandler (mesh, params = {}) {
 	const edge = mesh.edge;
 	const face = mesh.face;
 
+
+
 	const renderer = new Renderer(mesh);
 	const position = mesh.getAttribute(vertex, "position");
 	const savedPosition = mesh.addAttribute(vertex, "savedPosition");
 
+	// mesh.foreach(edge, e => {
+	// 	const v = mesh.incident(vertex, edge, e);
+	// 	if(mesh.degree(vertex, v[0]) > 2 && mesh.degree(vertex, v[1]) > 2)
+	// 	{
+	// 		console.log(e);
+	// 		let newV = mesh.cutEdge(e);
+	// 		let p0 = position[mesh.cell(vertex, v[0])];
+	// 		let p1 = position[mesh.cell(vertex, v[1])];
+	// 		position[mesh.cell(vertex, newV)] = p0.clone().add(p1).multiplyScalar(0.5);
+			
+	// 	}
+
+	// })
+
 	const vertex_color = params.vertex_color || new THREE.Color(0xFF0000);
-	const vertex_select_color = params.vertex_select_color || new THREE.Color(0x00FF00);
+	const vertex_select_color = params.vertex_select_color || new THREE.Color(0x00CC00);
 	const edge_color = params.edge_color || new THREE.Color(0x0000DD);
 	const edge_select_color = params.edge_select_color || new THREE.Color(0x00FF00);
 	const face_color = params.face_color || new THREE.Color(0x339999);
@@ -43,16 +60,60 @@ function MeshHandler (mesh, params = {}) {
 		}
 	};
 
-	this.debug = function() {
+	this.debug = function(scene) {
 		console.log(verticesMesh);
 		console.log(edgesMesh);
 		console.log(facesMesh);
 		console.log(mesh);
-		console.log(mesh.nbCells(vertex), mesh.nbCells(edge), mesh.nbCells(face))
+		console.log(mesh.nbCells(vertex), mesh.nbCells(edge), mesh.nbCells(face));
+
+		let material = new THREE.MeshLambertMaterial({
+			color:params.color || 0xAA00BB,
+			transparent: true,
+			opacity: 0.5,
+		});
+		let material2 = new THREE.MeshLambertMaterial({
+			color:params.color || 0x00AA22,
+			transparent: true,
+			opacity: 0.5,
+		});
+		let material3 = new THREE.MeshLambertMaterial({
+			color:params.color || 0xAAAA00,
+			transparent: true,
+			opacity: 0.5,
+		});
+		const geometry = new THREE.SphereGeometry(0.05, 32, 32);	
+		const geometry2 = new THREE.SphereGeometry(0.025, 32, 32);	
+		const geometry3 = new THREE.SphereGeometry(0.01, 32, 32);	
+
+		let intersections = 0;
+		let vertices = [];
+		mesh.foreach(vertex, vd => {
+			vertices[mesh.degree(vertex, vd)] = (vertices[mesh.degree(vertex, vd)] ?? 0) + 1;
+			if(mesh.degree(vertex, vd) > 3) {
+				let sphere = new THREE.Mesh(geometry, material);
+				sphere.position.copy(position[mesh.cell(vertex, vd)]);
+			++intersections;
+			scene.add(sphere);
+			}
+			if(mesh.degree(vertex, vd) == 3) {
+				let sphere = new THREE.Mesh(geometry2, material2);
+				sphere.position.copy(position[mesh.cell(vertex, vd)]);
+			++intersections;
+			scene.add(sphere);
+			}
+			if(mesh.degree(vertex, vd) == 1) {
+				let sphere = new THREE.Mesh(geometry3, material3);
+				sphere.position.copy(position[mesh.cell(vertex, vd)]);
+				scene.add(sphere);
+			}
+		});
+		console.log(intersections);
+		console.log(vertices);
 	}
 
-	this.exportMesh = function () {
-		console.log(exportIncidenceGraph(mesh, "ig"));
+	this.exportMesh = function (format) {
+		console.log(exportIncidenceGraph(mesh, format));
 	}
 
 	this.addMeshesTo = function (parent) {
@@ -318,6 +379,12 @@ function MeshHandler (mesh, params = {}) {
 		let vid = mesh.getAttribute(vertex, "instanceId")[v];
 
 		return vid;
+	};
+
+	this.addEdge = function (v0, v1) {
+		let ed = mesh.addEdge(v0, v1);
+		this.updateEdges();
+		return ed;
 	};
 
 	this.extrudeEdge = function (eid) {

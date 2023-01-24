@@ -1,5 +1,12 @@
 export const test0_ig = `
 IG
+1 0 0
+0 0 0
+
+`; 
+
+export const test1_ig = `
+IG
 9 14 6
 0 0 0
 0.5 0.5 0.5
@@ -32,7 +39,7 @@ IG
 3 9 3 2 
 `; 
 
-export const test1_ig = `
+export const test2_ig = `
 IG
 5 5 1
 0 1 0

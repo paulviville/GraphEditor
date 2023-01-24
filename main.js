@@ -12,9 +12,12 @@ import { controllers, GUI } from './CMapJS/Libs/dat.gui.module.js';
 import { TransformControls } from './CMapJS/Libs/TransformControls.js'
 import MeshHandler from './MeshHandler.js';
 import Gizmo from './Gizmo.js';
+import {loadWrl} from './CMapJS/IO/Surface_Formats/Wrl.js';
+import {exportOff} from './CMapJS/IO/Surface_Formats/Off.js';
 
 
 import {importIncidenceGraph, exportIncidenceGraph} from './CMapJS/IO/IncidenceGraphFormats/IncidenceGraphIO.js';
+import {importGraph, exportGraph} from './CMapJS/IO/GraphFormats/GraphIO.js';
 import {test0_ig} from './ig_files.js';
 
 console.log(`space: selection mode (shift down for multi seleciton)
@@ -31,13 +34,11 @@ del: delete selection
 s: print mesh string
 `)
 
-let ig = importIncidenceGraph("ig", `IG
-1 0 0
-0 0 0`);
+let ig = importIncidenceGraph("ig", test0_ig);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xAAAAAA);
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000.0);
+scene.background = new THREE.Color(0xffffff);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.001, 1000.0);
 camera.position.set(0, 0, 2);
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
@@ -107,8 +108,8 @@ const event_handler = new (function(scope, map_handler){
 	}
 	
 	const gui = new GUI({autoPlace: true, hideable: false});
-	gui.add(guiParams, "vertexSize", 0.01, 0.1).onChange(vertexResize);
-	gui.add(guiParams, "edgeSize", 1, 10).onChange(edgeResize);
+	gui.add(guiParams, "vertexSize", 0.00025, 10.1).onChange(vertexResize);
+	gui.add(guiParams, "edgeSize", 0.05, 60).onChange(edgeResize);
 	const raycaster = new THREE.Raycaster;
 	const mouse = new THREE.Vector2;
 	
@@ -178,8 +179,8 @@ const event_handler = new (function(scope, map_handler){
 	);
 
 
-	let sphere = new THREE.Mesh(new THREE.SphereBufferGeometry(0.01, 10, 10), new THREE.MeshLambertMaterial({color: 0x0000FF}));
-	let sphereDelta = new THREE.Mesh(new THREE.SphereBufferGeometry(0.01, 10, 10), new THREE.MeshLambertMaterial({color: 0x00FF00}));
+	let sphere = new THREE.Mesh(new THREE.SphereBufferGeometry(0.0001, 10, 10), new THREE.MeshLambertMaterial({color: 0x0000FF}));
+	let sphereDelta = new THREE.Mesh(new THREE.SphereBufferGeometry(0.0001, 10, 10), new THREE.MeshLambertMaterial({color: 0x00FF00}));
 	let sphereEdge = new THREE.Mesh(new THREE.SphereBufferGeometry(0.01, 10, 10), new THREE.MeshLambertMaterial({color: 0xFFFF00}));
 	scene.add(sphereEdge);
 	const getGizmoConstraint = function () {
@@ -433,10 +434,10 @@ const event_handler = new (function(scope, map_handler){
 				nextMode = modecutFace;
 				break;
 			case "KeyS": // Print mesh string
-				map_handler.exportMesh();
+				map_handler.exportMesh("ig");
 				break;
 			case "ControlLeft":
-				map_handler.debug();
+				map_handler.debug(scene);
 				break;
 		};
 
@@ -508,9 +509,12 @@ const event_handler = new (function(scope, map_handler){
 			console.log(meshFile);
 			if(blob.name.match(/.cg/))
 			{
-				
+				map_handler.delete();
+				map_handler = new MeshHandler(importGraph("cg", meshFile));
+				map_handler.initialize({vertices: true, edges: true});
+				map_handler.addMeshesTo(scene);
 			}
-			if(blob.name.match(/.ig/))
+			if(blob.name.match(/\.ig/))
 			{
 				map_handler.delete();
 				map_handler = new MeshHandler(importIncidenceGraph("ig", meshFile));
@@ -521,7 +525,40 @@ const event_handler = new (function(scope, map_handler){
 			{
 				if(surfaceView)
 					scene.remove(surfaceView);
-				surfaceView = loadSurfaceView("off", meshFile, {transparent: true, opacity: 0.8});
+					// loadCMap2("off", meshFile)
+				surfaceView = loadSurfaceView("off", meshFile, {transparent: true, opacity: 0.25});
+				scene.add(surfaceView);
+
+				// let map = loadCMap2("off", meshFile);
+				// let pos = map.getAttribute(map.vertex, "position");
+				// let igPos = ig.getAttribute(ig.vertex, "position");
+				// map.foreach(map.edge, ed => {
+				// 	let p = new THREE.Vector3(0, 0, 0);
+				// 	map.foreachIncident(map.vertex, map.edge, ed, vd => {
+				// 		p.addScaledVector(pos[map.cell(map.vertex, vd)], 0.5);
+				// 	})
+				// 	map_handler.addVertex(p);
+				// });
+
+				// map.foreach(map.face, ed => {
+				// 	let p = new THREE.Vector3(0, 0, 0);
+				// 	let n = 0;
+				// 	map.foreachIncident(map.vertex, map.face, ed, vd => {
+				// 		p.add(pos[map.cell(map.vertex, vd)]);
+				// 		++n;
+				// 	})
+				// 	p.divideScalar(n);
+				// 	map_handler.addVertex(p);
+				// });
+			}
+			if(blob.name.match(/.wrl/)){
+				let g = loadWrl(meshFile);
+				console.log(g);
+				console.log(exportOff(g));
+				if(surfaceView)
+					scene.remove(surfaceView);
+					// loadCMap2("off", meshFile)
+				surfaceView = loadSurfaceView("wrl", meshFile, {transparent: true, opacity: 0.25});
 				scene.add(surfaceView);
 			}
 		});
@@ -534,6 +571,166 @@ window.event_handler = event_handler;
 window.map_handler = map_handler;
 window.ig = ig;
 
+window.twirl = function() {
+	let angle = Math.PI * 2 / 3;
+	let axis = new THREE.Vector3(0, 0, 1);
+	let angleOffset = Math.PI / 8;
+	let distOffset = new THREE.Vector3(0, 0, 0.25);
+	let p0 = new THREE.Vector3(0, 0, 0);
+	let p1 = new THREE.Vector3(0, 0.25, 0);
+	let p2 = p1.clone().applyAxisAngle(axis, 1.25*angleOffset).multiplyScalar(2);
+	// let p2 = new THREE.Vector3(0, 0, 0.5);
+	let p3 = new THREE.Vector3(0, 0, 0.5);
+
+	// map_handler.selectVertex()
+	let v1_0 = map_handler.addVertex(p1);
+	let v1_1 = map_handler.addVertex(p1.clone().applyAxisAngle(axis, angle))
+	let v1_2 = map_handler.addVertex(p1.clone().applyAxisAngle(axis, -angle))
+	let v2_0 = map_handler.addVertex(p2);
+	let v2_1 = map_handler.addVertex(p2.clone().applyAxisAngle(axis, angle))
+	let v2_2 = map_handler.addVertex(p2.clone().applyAxisAngle(axis, -angle))
+	// met p = new THREE.Vector3();
+
+	let v0_0 = 0;
+	map_handler.addEdge(v0_0, v1_0);
+	map_handler.addEdge(v0_0, v1_1);
+	map_handler.addEdge(v0_0, v1_2);
+	map_handler.addEdge(v1_0, v2_0);
+	map_handler.addEdge(v1_1, v2_1);
+	map_handler.addEdge(v1_2, v2_2);
+
+	let v0_0_ = v0_0;
+	let v1_0_ = v1_0;
+	let v1_1_ = v1_1;
+	let v1_2_ = v1_2;
+	let v2_0_ = v2_0;
+	let v2_1_ = v2_1;
+	let v2_2_ = v2_2;
+
+	for(let i = 0; i < 8; ++i){
+
+	p0.add(distOffset);
+	p1.applyAxisAngle(axis, angleOffset);
+	p2.applyAxisAngle(axis, angleOffset);
+	p1.multiplyScalar(1/0.8);
+	p2.multiplyScalar(1/0.8);
+	distOffset.multiplyScalar(1/0.8);
+	angleOffset *= 0.95;
+
+	v0_0 = map_handler.addVertex(p0);
+	v1_0 = map_handler.addVertex(p1.clone().add(p0));
+	v1_1 = map_handler.addVertex(p1.clone().add(p0).applyAxisAngle(axis, angle))
+	v1_2 = map_handler.addVertex(p1.clone().add(p0).applyAxisAngle(axis, -angle))
+	v2_0 = map_handler.addVertex(p2.clone().add(p0));
+	v2_1 = map_handler.addVertex(p2.clone().add(p0).applyAxisAngle(axis, angle))
+	v2_2 = map_handler.addVertex(p2.clone().add(p0).applyAxisAngle(axis, -angle))
+	
+	map_handler.addEdge(v0_0, v1_0);
+	map_handler.addEdge(v0_0, v1_1);
+	map_handler.addEdge(v0_0, v1_2);
+	map_handler.addEdge(v1_0, v2_0);
+	map_handler.addEdge(v1_1, v2_1);
+	map_handler.addEdge(v1_2, v2_2);
+
+	map_handler.addEdge(v0_0_, v0_0);
+	map_handler.addEdge(v1_0_, v1_0);
+	map_handler.addEdge(v1_1_, v1_1);
+	map_handler.addEdge(v1_2_, v1_2);
+	map_handler.addEdge(v2_0_, v2_0);
+	map_handler.addEdge(v2_1_, v2_1);
+	map_handler.addEdge(v2_2_, v2_2);
+
+	v0_0_ = v0_0;
+	v1_0_ = v1_0;
+	v1_1_ = v1_1;
+	v1_2_ = v1_2;
+	v2_0_ = v2_0;
+	v2_1_ = v2_1;
+	v2_2_ = v2_2;
+}
+angleOffset *= 0.95;
+
+
+	for(let i = 0; i < 8; ++i){
+
+		p0.add(distOffset);
+		p1.applyAxisAngle(axis, angleOffset);
+		p2.applyAxisAngle(axis, angleOffset);
+		p1.multiplyScalar(0.8);
+		p2.multiplyScalar(0.8);
+		distOffset.multiplyScalar(0.8);
+		angleOffset *= 1/0.95;
+	
+		v0_0 = map_handler.addVertex(p0);
+		v1_0 = map_handler.addVertex(p1.clone().add(p0));
+		v1_1 = map_handler.addVertex(p1.clone().add(p0).applyAxisAngle(axis, angle))
+		v1_2 = map_handler.addVertex(p1.clone().add(p0).applyAxisAngle(axis, -angle))
+		v2_0 = map_handler.addVertex(p2.clone().add(p0));
+		v2_1 = map_handler.addVertex(p2.clone().add(p0).applyAxisAngle(axis, angle))
+		v2_2 = map_handler.addVertex(p2.clone().add(p0).applyAxisAngle(axis, -angle))
+		
+		map_handler.addEdge(v0_0, v1_0);
+		map_handler.addEdge(v0_0, v1_1);
+		map_handler.addEdge(v0_0, v1_2);
+		map_handler.addEdge(v1_0, v2_0);
+		map_handler.addEdge(v1_1, v2_1);
+		map_handler.addEdge(v1_2, v2_2);
+	
+		map_handler.addEdge(v0_0_, v0_0);
+		map_handler.addEdge(v1_0_, v1_0);
+		map_handler.addEdge(v1_1_, v1_1);
+		map_handler.addEdge(v1_2_, v1_2);
+		map_handler.addEdge(v2_0_, v2_0);
+		map_handler.addEdge(v2_1_, v2_1);
+		map_handler.addEdge(v2_2_, v2_2);
+	
+		v0_0_ = v0_0;
+		v1_0_ = v1_0;
+		v1_1_ = v1_1;
+		v1_2_ = v1_2;
+		v2_0_ = v2_0;
+		v2_1_ = v2_1;
+		v2_2_ = v2_2;
+		}
+}
+
+window.crossTorus = function() {
+	let axisY = new THREE.Vector3(1, 0, 0);
+	let axisX = new THREE.Vector3(0, 1, 0);
+	let angle = Math.PI / 8;
+	let angleOffset = Math.PI / 16;
+	// let angleOffset = Math.PI / 7;
+	let p = new THREE.Vector3();
+	let p0 = new THREE.Vector3(0, 0, 1);
+	let p1 = new THREE.Vector3(0, 0, -0.35);
+	let p2 = new THREE.Vector3(0.35, 0, 0);
+	let p3 = new THREE.Vector3(0, 0, 0.35);
+	let p4 = new THREE.Vector3(-0.35, 0, 0);
+	
+	map_handler.addVertex(p0);
+	map_handler.addVertex(p.addVectors(p0, p1));
+	map_handler.addVertex(p.addVectors(p0, p2));
+	map_handler.addVertex(p.addVectors(p0, p3));
+	map_handler.addVertex(p.addVectors(p0, p4));
+
+	for(let i = 1; i < 16; ++i){
+	p0.applyAxisAngle(axisY, angle)
+	p1.applyAxisAngle(axisX, angleOffset)
+	p2.applyAxisAngle(axisX, angleOffset)
+	p3.applyAxisAngle(axisX, angleOffset)
+	p4.applyAxisAngle(axisX, angleOffset)
+	
+	let p1_ = p1.clone().applyAxisAngle(axisY, angle*i)
+	let p2_ = p2.clone().applyAxisAngle(axisY, angle*i)
+	let p3_ = p3.clone().applyAxisAngle(axisY, angle*i)
+	let p4_ = p4.clone().applyAxisAngle(axisY, angle*i)
+	map_handler.addVertex(p0);
+	map_handler.addVertex(p.addVectors(p0, p1_));
+	map_handler.addVertex(p.addVectors(p0, p2_));
+	map_handler.addVertex(p.addVectors(p0, p3_));
+	map_handler.addVertex(p.addVectors(p0, p4_));
+	}
+}
 
 function nbIncidentFaces(ig, e) {
 	let nbIncFaces = 0;
@@ -861,33 +1058,8 @@ window.incidentLeaflet = incidentLeaflet;
 window.analyzeFaceGeometry = analyzeFaceGeometry;
 window.debugDrawFaceGeometry = debugDrawFaceGeometry;
 
-function* testGen(){
-	let i = 0;
-	yield ++i;
-	yield ++i;
-	yield ++i;
-	yield ++i;
-	// while(true) {
 
-	// 	yield (i++ % 2);
-
-	// }
-}
-
-window.gen = testGen();
-
-
-const testObj = {
-	array: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
-	*[Symbol.iterator]() {
-		for(let i = 0; i < this.array.length; ++i) {
-			yield (this.array[i]);
-		}
-	}
-}
-
-
-window.testObj = testObj
+window.exportCG = exportIncidenceGraph;
 
 
 function update ()
