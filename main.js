@@ -6,17 +6,17 @@ import IncidenceGraph from './CMapJS/CMap/IncidenceGraph.js';
 import Renderer from './CMapJS/Rendering/Renderer.js';
 import * as THREE from './CMapJS/Libs/three.module.js';
 import { OrbitControls } from './CMapJS/Libs/OrbitsControls.js';
-import { loadCMap2 } from './CMapJS/IO/Surface_Formats/CMap2IO.js';
+import { loadCMap2 } from './CMapJS/IO/SurfaceFormats/CMap2IO.js';
 import { loadSurfaceView } from './CMapJS/Rendering/displayOnly.js';
 import { controllers, GUI } from './CMapJS/Libs/dat.gui.module.js';
 import { TransformControls } from './CMapJS/Libs/TransformControls.js'
 import MeshHandler from './MeshHandler.js';
 import Gizmo from './Gizmo.js';
-import {loadWrl} from './CMapJS/IO/Surface_Formats/Wrl.js';
-import {exportOff} from './CMapJS/IO/Surface_Formats/Off.js';
+import {loadWrl} from './CMapJS/IO/SurfaceFormats/Wrl.js';
+import {exportOff} from './CMapJS/IO/SurfaceFormats/Off.js';
 
 
-import {importIncidenceGraph, exportIncidenceGraph} from './CMapJS/IO/IncidenceGraphFormats/IncidenceGraphIO.js';
+import {loadIncidenceGraph, exportIncidenceGraph} from './CMapJS/IO/IncidenceGraphFormats/IncidenceGraphIO.js';
 import {importGraph, exportGraph} from './CMapJS/IO/GraphFormats/GraphIO.js';
 import {test0_ig} from './ig_files.js';
 
@@ -34,7 +34,7 @@ del: delete selection
 s: print mesh string
 `)
 
-let ig = importIncidenceGraph("ig", test0_ig);
+let ig = loadIncidenceGraph("ig", test0_ig);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
@@ -517,7 +517,7 @@ const event_handler = new (function(scope, map_handler){
 			if(blob.name.match(/\.ig/))
 			{
 				map_handler.delete();
-				map_handler = new MeshHandler(importIncidenceGraph("ig", meshFile));
+				map_handler = new MeshHandler(loadIncidenceGraph("ig", meshFile));
 				map_handler.initialize({vertices: true, edges: true, faces: true});
 				map_handler.addMeshesTo(scene);
 			}
@@ -730,6 +730,172 @@ window.crossTorus = function() {
 	map_handler.addVertex(p.addVectors(p0, p3_));
 	map_handler.addVertex(p.addVectors(p0, p4_));
 	}
+}
+
+window.windTurbine = function() {
+	let v0_0, v0_1, v0_2;
+	let v0_0_, v0_1_, v0_2_;
+	let v1_0, v1_1, v1_2;
+	let v1_0_, v1_1_, v1_2_;
+	let v2_0, v2_1, v2_2;
+	let v2_0_, v2_1_, v2_2_;
+
+	let p0, p1, p2, p3, p4, p5;
+	let axis = new THREE.Vector3(0, 1, 0);
+	let angleOffset = Math.PI/40;
+	let turbineAngle = Math.PI/20;
+	p0 = new THREE.Vector3(0, 0, 1);
+	p1 = p0.clone().applyAxisAngle(axis, 2*Math.PI/3);
+	p2 = p0.clone().applyAxisAngle(axis, -2*Math.PI/3);
+
+	v0_0 = map_handler.addVertex(p0);
+	v0_1 = map_handler.addVertex(p0.clone().applyAxisAngle(axis, turbineAngle));
+	v0_2 = map_handler.addVertex(p0.clone().applyAxisAngle(axis, -turbineAngle));
+	v1_0 = map_handler.addVertex(p1);
+	v1_1 = map_handler.addVertex(p1.clone().applyAxisAngle(axis, turbineAngle));
+	v1_2 = map_handler.addVertex(p1.clone().applyAxisAngle(axis, -turbineAngle));
+	v2_0 = map_handler.addVertex(p2);
+	v2_1 = map_handler.addVertex(p2.clone().applyAxisAngle(axis, turbineAngle));
+	v2_2 = map_handler.addVertex(p2.clone().applyAxisAngle(axis, -turbineAngle));
+
+	map_handler.addEdge(v0_0, v0_1);map_handler.addEdge(v0_0, v0_2);
+	map_handler.addEdge(v1_0, v1_1);map_handler.addEdge(v1_0, v1_2);
+	map_handler.addEdge(v2_0, v2_1);map_handler.addEdge(v2_0, v2_2);
+
+	v0_0_ = v0_0; v0_1_ = v0_1; v0_2_ = v0_2;
+	v1_0_ = v1_0; v1_1_ = v1_1;	v1_2_ = v1_2;
+	v2_0_ = v2_0; v2_1_ = v2_1;	v2_2_ = v2_2;
+
+	p0.applyAxisAngle(axis, angleOffset).addScaledVector(axis, 1/8);
+	p1 = p0.clone().applyAxisAngle(axis, 2*Math.PI/3);
+	p2 = p0.clone().applyAxisAngle(axis, -2*Math.PI/3);
+
+	let p4_0, v0_4_0, v0_4_1, v0_4_2, v1_4_0, v1_4_1, v1_4_2, v2_4_0, v2_4_1, v2_4_2;
+	let p25_0, v0_25_0, v0_25_1, v0_25_2, v1_25_0, v1_25_1, v1_25_2, v2_25_0, v2_25_1, v2_25_2;
+
+	for(let i = 1; i < 30; ++i){
+		if(i == 4){
+			p4_0 = p0.clone();
+			// p4_0_0 = 
+			// p4_0_1
+			// p4_0_2
+		} 
+		if(i == 25) p25_0 = p0.clone();
+		
+		v0_0 = map_handler.addVertex(p0);
+		v0_1 = map_handler.addVertex(p0.clone().applyAxisAngle(axis, turbineAngle));
+		v0_2 = map_handler.addVertex(p0.clone().applyAxisAngle(axis, -turbineAngle));
+		v1_0 = map_handler.addVertex(p1);
+		v1_1 = map_handler.addVertex(p1.clone().applyAxisAngle(axis, turbineAngle));
+		v1_2 = map_handler.addVertex(p1.clone().applyAxisAngle(axis, -turbineAngle));
+		v2_0 = map_handler.addVertex(p2);
+		v2_1 = map_handler.addVertex(p2.clone().applyAxisAngle(axis, turbineAngle));
+		v2_2 = map_handler.addVertex(p2.clone().applyAxisAngle(axis, -turbineAngle));
+
+		map_handler.addEdge(v0_0, v0_1);map_handler.addEdge(v0_0, v0_2);
+		map_handler.addEdge(v1_0, v1_1);map_handler.addEdge(v1_0, v1_2);
+		map_handler.addEdge(v2_0, v2_1);map_handler.addEdge(v2_0, v2_2);
+
+		map_handler.addEdge(v0_0, v0_0_);
+		map_handler.addEdge(v0_1, v0_1_);
+		map_handler.addEdge(v0_2, v0_2_);
+		map_handler.addEdge(v1_0, v1_0_);
+		map_handler.addEdge(v1_1, v1_1_);
+		map_handler.addEdge(v1_2, v1_2_);
+		map_handler.addEdge(v2_0, v2_0_);
+		map_handler.addEdge(v2_1, v2_1_);
+		map_handler.addEdge(v2_2, v2_2_);
+
+		v0_0_ = v0_0; v0_1_ = v0_1; v0_2_ = v0_2;
+		v1_0_ = v1_0; v1_1_ = v1_1;	v1_2_ = v1_2;
+		v2_0_ = v2_0; v2_1_ = v2_1;	v2_2_ = v2_2;
+
+		p0.applyAxisAngle(axis, angleOffset).addScaledVector(axis, 1/8);
+		p1 = p0.clone().applyAxisAngle(axis, 2*Math.PI/3);
+		p2 = p0.clone().applyAxisAngle(axis, -2*Math.PI/3);
+	}
+
+	let shrink = new THREE.Vector3(0.87, 1, 0.87)
+	console.log(p4_0)
+	p4_0.multiply(shrink);
+	p25_0.multiply(shrink);
+	// p0 = p4_0;
+	let p4_1 = p4_0.clone().applyAxisAngle(axis, 2*Math.PI/3);
+	let p4_2 = p4_0.clone().applyAxisAngle(axis, -2*Math.PI/3);
+
+	let p25_1 = p25_0.clone().applyAxisAngle(axis, 2*Math.PI/3);
+	let p25_2 = p25_0.clone().applyAxisAngle(axis, -2*Math.PI/3);
+
+	let branchAngle = Math.PI/30;
+
+	for(let i = 0;  i < 14; ++i){
+		v0_0 = map_handler.addVertex(p4_0);
+		v1_0 = map_handler.addVertex(p4_1);
+		v2_0 = map_handler.addVertex(p4_2);
+
+		v0_1 = map_handler.addVertex(p4_0.clone().applyAxisAngle(axis, branchAngle));
+		v0_2 = map_handler.addVertex(p4_0.clone().applyAxisAngle(axis, -branchAngle));
+		v1_0 = map_handler.addVertex(p4_1);
+		v1_1 = map_handler.addVertex(p4_1.clone().applyAxisAngle(axis, branchAngle));
+		v1_2 = map_handler.addVertex(p4_1.clone().applyAxisAngle(axis, -branchAngle));
+		v2_0 = map_handler.addVertex(p4_2);
+		v2_1 = map_handler.addVertex(p4_2.clone().applyAxisAngle(axis, branchAngle));
+		v2_2 = map_handler.addVertex(p4_2.clone().applyAxisAngle(axis, -branchAngle));
+
+		p4_0.multiply(shrink);
+		p4_1 = p4_0.clone().applyAxisAngle(axis, 2*Math.PI/3);
+		p4_2 = p4_0.clone().applyAxisAngle(axis, -2*Math.PI/3);
+
+
+		v0_0 = map_handler.addVertex(p25_0);
+		v1_0 = map_handler.addVertex(p25_1);
+		v2_0 = map_handler.addVertex(p25_2);
+
+		v0_1 = map_handler.addVertex(p25_0.clone().applyAxisAngle(axis, branchAngle));
+		v0_2 = map_handler.addVertex(p25_0.clone().applyAxisAngle(axis, -branchAngle));
+		v1_0 = map_handler.addVertex(p25_1);
+		v1_1 = map_handler.addVertex(p25_1.clone().applyAxisAngle(axis, branchAngle));
+		v1_2 = map_handler.addVertex(p25_1.clone().applyAxisAngle(axis, -branchAngle));
+		v2_0 = map_handler.addVertex(p25_2);
+		v2_1 = map_handler.addVertex(p25_2.clone().applyAxisAngle(axis, branchAngle));
+		v2_2 = map_handler.addVertex(p25_2.clone().applyAxisAngle(axis, -branchAngle));
+
+		p25_0.multiply(shrink);
+		p25_1 = p25_0.clone().applyAxisAngle(axis, 2*Math.PI/3);
+		p25_2 = p25_0.clone().applyAxisAngle(axis, -2*Math.PI/3);
+	}
+
+	branchAngle = Math.PI/15;
+	for(let i = 0; i < 30; i++)
+	{
+		p4_0.applyAxisAngle(axis, branchAngle);
+		p25_0.applyAxisAngle(axis, branchAngle);
+
+		v0_0 = map_handler.addVertex(p4_0);
+		v0_0 = map_handler.addVertex(p25_0);
+	}
+	p4_0.multiply(shrink);
+	p25_0.multiply(shrink);
+	for(let i = 0; i < 30; i++)
+	{
+		p4_0.applyAxisAngle(axis, branchAngle);
+		p25_0.applyAxisAngle(axis, branchAngle);
+
+		v0_0 = map_handler.addVertex(p4_0);
+		v0_0 = map_handler.addVertex(p25_0);
+	}
+	p4_0.multiply(shrink);
+	p25_0.multiply(shrink);
+	for(let i = 0; i < 30; i++)
+	{
+		p4_0.applyAxisAngle(axis, branchAngle);
+		p25_0.applyAxisAngle(axis, branchAngle);
+
+		v0_0 = map_handler.addVertex(p4_0);
+		v0_0 = map_handler.addVertex(p25_0);
+	}
+	p4_0.multiply(shrink);
+	p25_0.multiply(shrink);
 }
 
 function nbIncidentFaces(ig, e) {
